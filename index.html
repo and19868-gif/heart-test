@@ -8,21 +8,40 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; color: #333; }
         .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* 封面圖樣式 */
+        .cover-img { width: 100%; border-radius: 15px; margin-bottom: 20px; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
         h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-        .q-box { padding: 15px; border-bottom: 1px solid #edf2f7; display: flex; align-items: flex-start; cursor: pointer; transition: 0.2s; }
+        
+        /* 題目區塊樣式 */
+        .q-box { 
+            padding: 15px; border-bottom: 1px solid #edf2f7; 
+            display: flex; flex-direction: column; cursor: pointer; 
+            margin-bottom: 15px; background: #fff; border-radius: 12px;
+            transition: 0.2s;
+        }
         .q-box:active { background-color: #f0f4f8; }
-        .q-box input { width: 22px; height: 22px; margin-right: 12px; margin-top: 2px; flex-shrink: 0; }
-        .q-box label { font-size: 16px; line-height: 1.5; cursor: pointer; }
-        .btn { background: #4A90E2; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; }
+        .q-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; }
+        .q-text-row { display: flex; align-items: flex-start; width: 100%; }
+        .q-text-row input { width: 22px; height: 22px; margin-right: 12px; margin-top: 2px; flex-shrink: 0; }
+        .q-text-row label { font-size: 16px; line-height: 1.5; cursor: pointer; }
+        
+        .btn { background: #4A90E2; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; box-shadow: 0 4px 6px rgba(74,144,226,0.3); }
         #result { display: none; margin-top: 10px; }
         .result-card { padding: 20px; border-radius: 15px; text-align: left; line-height: 1.6; border: 2px solid; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>血管健康自測量表</h2>
+        <img src="https://and19868-gif.github.io/heart-test/cover.jpg" id="mainCover" class="cover-img" alt="血管年齡自測封面">
+        
+        <h2 id="mainTitle">血管健康自測量表</h2>
+        
         <div id="quiz">正在安全同步診所資料...</div>
+        
         <button id="submitBtn" class="btn" style="display:none;" onclick="calculate()">提交並查看分析結果</button>
+        
         <div id="result"></div>
     </div>
 
@@ -44,8 +63,18 @@
                 questionList = data;
                 const container = document.getElementById('quiz');
                 container.innerHTML = "";
+                
                 data.forEach((q, i) => {
-                    container.innerHTML += `<div class="q-box" onclick="toggleCheck(${i})"><input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()"><label>${q}</label></div>`;
+                    // 如果試算表 B 欄有網址，就顯示圖片
+                    const imgTag = q.img ? `<img src="${q.img}" class="q-img">` : "";
+                    container.innerHTML += `
+                        <div class="q-box" onclick="toggleCheck(${i})">
+                            ${imgTag}
+                            <div class="q-text-row">
+                                <input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()">
+                                <label>${q.text}</label>
+                            </div>
+                        </div>`;
                 });
                 document.getElementById('submitBtn').style.display = "block";
             }).catch(err => {
@@ -64,39 +93,43 @@
             checks.forEach(c => { score += c.checked ? 1 : 0; details.push(c.checked); });
 
             let level, color, age, content, suggest;
+            
             if (score <= 3) {
-                level = "第一級：綠色警戒"; color = "#28a745"; age = "相符";
+                level = "第一級：綠色警戒"; color = "#28a745"; age = "血管年齡：與生理年齡相符";
                 content = "目前您的血管狀況尚屬健康，但現代人生活節奏快，隱形壓力不可掉以輕心。";
-                suggest = "繼續保持良好的飲食與運動習慣，守護健康存摺。";
+                suggest = "繼續保持良好的飲食與運動習慣，並維持每年一次的定期追蹤檢查，守護健康存摺。";
             } else if (score <= 7) {
-                level = "第二級：黃色警戒"; color = "#f39c12"; age = "預估大於生理年齡 10 歲";
-                content = "您的血管已經開始發出「疲勞警訊」！長期外食與久坐正在加速血管硬化。";
-                suggest = "血管彈性正在流失中。建議儘早來院進行專業檢測。";
+                level = "第二級：黃色警戒"; color = "#f39c12"; age = "血管年齡：預估大於生理年齡 10 歲";
+                content = "您的血管已經開始發出「疲勞警訊」！長期外食與久坐正在加速血管硬化與代謝緩慢。";
+                suggest = "血管彈性正在流失中。建議儘早來院進行專業檢測（如血脂、血糖及發炎指標），由醫師為您規劃生活轉型計畫。";
             } else {
-                level = "第三級：紅色警報"; color = "#dc3545"; age = "預估大於生理年齡 20 歲";
-                content = "危險！您的血管健康可能已處於臨界點！胸悶、斷片等信號顯著增加意外風險。";
-                suggest = "請立即預約掛號進行深度評估，不要再等待。";
+                level = "第三級：紅色警報"; color = "#dc3545"; age = "血管年齡：預估大於生理年齡 20 歲";
+                content = "危險！您的血管健康可能已處於臨界點！胸悶、斷片與血壓紅字是身體的求救信號，發生心血管意外的風險顯著增加。";
+                suggest = "請立即預約掛號進行深度心血管評估。您可能需要專業影像檢查（如頸動脈超音波）或藥物介入。為了家人與自己，請不要再等待。";
             }
 
+            // 隱藏封面與題目
+            document.getElementById('mainCover').style.display = "none";
+            document.getElementById('mainTitle').style.display = "none";
             document.getElementById('quiz').style.display = "none";
             document.getElementById('submitBtn').style.display = "none";
+            
             const resDiv = document.getElementById('result');
             resDiv.style.display = "block";
             resDiv.innerHTML = `
                 <div class="result-card" style="border-color:${color}; background-color:${color}11;">
                     <h2 style="color:${color}; text-align:center;">${level}</h2>
-                    <p><strong>【血管年齡：${age}】</strong></p>
-                    <p>${content}</p>
-                    <hr style="border:0; border-top:1px solid ${color}44;">
-                    <p>💡 建議：${suggest}</p>
-                    <button onclick="liff.closeWindow()" style="background:${color}; color:white; padding:15px; width:100%; border:none; border-radius:10px; margin-top:20px; font-weight:bold; cursor:pointer;">確認並關閉視窗</button>
+                    <p style="font-size: 17px; font-weight: bold; margin-bottom: 10px;">【${age}】</p>
+                    <p style="font-size: 15px; margin-bottom: 15px;">${content}</p>
+                    <hr style="border:0; border-top:1px solid ${color}44; margin-bottom: 15px;">
+                    <p style="font-size: 15px;"><strong>💡 建議：</strong>${suggest}</p>
+                    <button onclick="liff.closeWindow()" style="background:${color}; color:white; padding:15px; width:100%; border:none; border-radius:10px; margin-top:20px; font-weight:bold; cursor:pointer; font-size: 16px;">確認並關閉視窗</button>
                 </div>
             `;
 
-            // 同步存檔
             fetch(API_URL, {
                 method: "POST",
-                mode: 'no-cors', // 解決跨網域存取問題
+                mode: 'no-cors',
                 body: JSON.stringify({userId, userName, score, level, details})
             });
         }
