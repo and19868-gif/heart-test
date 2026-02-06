@@ -6,23 +6,28 @@
     <title>血管年齡自測系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; }
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; color: #333; }
         .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .q-box { padding: 15px; border-bottom: 1px solid #edf2f7; display: flex; align-items: flex-start; cursor: pointer; }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        .q-box { padding: 15px; border-bottom: 1px solid #edf2f7; display: flex; align-items: flex-start; cursor: pointer; transition: 0.2s; }
+        .q-box:active { background-color: #f0f4f8; }
+        .q-box input { width: 22px; height: 22px; margin-right: 12px; margin-top: 2px; flex-shrink: 0; }
+        .q-box label { font-size: 16px; line-height: 1.5; cursor: pointer; }
         .btn { background: #4A90E2; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; }
-        #result { display: none; margin-top: 25px; }
+        #result { display: none; margin-top: 10px; }
+        .result-card { padding: 20px; border-radius: 15px; text-align: left; line-height: 1.6; border: 2px solid; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2 style="text-align:center; color:#2c3e50;">血管健康自測量表</h2>
-        <div id="quiz">正在載入量表題目...</div>
+        <h2>血管健康自測量表</h2>
+        <div id="quiz">正在安全同步診所資料...</div>
         <button id="submitBtn" class="btn" style="display:none;" onclick="calculate()">提交並查看分析結果</button>
         <div id="result"></div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec"; // 這裡要替換！
+        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
         let userName = "LINE用戶", userId = "未知ID", questionList = [];
 
         liff.init({ liffId: "2009061399-LVES2gnp" }).then(() => {
@@ -32,7 +37,7 @@
                     fetchQuestions();
                 });
             } else { liff.login(); }
-        });
+        }).catch(err => fetchQuestions());
 
         function fetchQuestions() {
             fetch(API_URL).then(res => res.json()).then(data => {
@@ -40,10 +45,17 @@
                 const container = document.getElementById('quiz');
                 container.innerHTML = "";
                 data.forEach((q, i) => {
-                    container.innerHTML += `<div class="q-box" onclick="document.getElementById('q${i}').click()"><input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()"><label>${q}</label></div>`;
+                    container.innerHTML += `<div class="q-box" onclick="toggleCheck(${i})"><input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()"><label>${q}</label></div>`;
                 });
                 document.getElementById('submitBtn').style.display = "block";
+            }).catch(err => {
+                document.getElementById('quiz').innerHTML = "資料連線暫時不穩定，請重新開啟。";
             });
+        }
+
+        function toggleCheck(i) {
+            const cb = document.getElementById('q'+i);
+            if(cb) cb.checked = !cb.checked;
         }
 
         function calculate() {
@@ -51,22 +63,40 @@
             let score = 0, details = [];
             checks.forEach(c => { score += c.checked ? 1 : 0; details.push(c.checked); });
 
-            let level = score <= 3 ? "第一級" : (score <= 7 ? "第二級" : "第三級");
-            let color = score <= 3 ? "#28a745" : (score <= 7 ? "#f39c12" : "#dc3545");
+            let level, color, age, content, suggest;
+            if (score <= 3) {
+                level = "第一級：綠色警戒"; color = "#28a745"; age = "相符";
+                content = "目前您的血管狀況尚屬健康，但現代人生活節奏快，隱形壓力不可掉以輕心。";
+                suggest = "繼續保持良好的飲食與運動習慣，守護健康存摺。";
+            } else if (score <= 7) {
+                level = "第二級：黃色警戒"; color = "#f39c12"; age = "預估大於生理年齡 10 歲";
+                content = "您的血管已經開始發出「疲勞警訊」！長期外食與久坐正在加速血管硬化。";
+                suggest = "血管彈性正在流失中。建議儘早來院進行專業檢測。";
+            } else {
+                level = "第三級：紅色警報"; color = "#dc3545"; age = "預估大於生理年齡 20 歲";
+                content = "危險！您的血管健康可能已處於臨界點！胸悶、斷片等信號顯著增加意外風險。";
+                suggest = "請立即預約掛號進行深度評估，不要再等待。";
+            }
 
             document.getElementById('quiz').style.display = "none";
             document.getElementById('submitBtn').style.display = "none";
-            document.getElementById('result').style.display = "block";
-            document.getElementById('result').innerHTML = `
-                <div style="border:2px solid ${color}; padding:20px; border-radius:15px; text-align:center;">
-                    <h2 style="color:${color}">${level}</h2>
-                    <p>測驗已完成，資料已同步至診所系統。</p>
-                    <button onclick="liff.closeWindow()" style="background:${color}; color:white; padding:12px; width:100%; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">確認並關閉</button>
+            const resDiv = document.getElementById('result');
+            resDiv.style.display = "block";
+            resDiv.innerHTML = `
+                <div class="result-card" style="border-color:${color}; background-color:${color}11;">
+                    <h2 style="color:${color}; text-align:center;">${level}</h2>
+                    <p><strong>【血管年齡：${age}】</strong></p>
+                    <p>${content}</p>
+                    <hr style="border:0; border-top:1px solid ${color}44;">
+                    <p>💡 建議：${suggest}</p>
+                    <button onclick="liff.closeWindow()" style="background:${color}; color:white; padding:15px; width:100%; border:none; border-radius:10px; margin-top:20px; font-weight:bold; cursor:pointer;">確認並關閉視窗</button>
                 </div>
             `;
 
+            // 同步存檔
             fetch(API_URL, {
                 method: "POST",
+                mode: 'no-cors', // 解決跨網域存取問題
                 body: JSON.stringify({userId, userName, score, level, details})
             });
         }
