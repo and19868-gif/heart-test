@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>血管年齡自測系統</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .q-box { padding: 15px; border-bottom: 1px solid #edf2f7; display: flex; align-items: flex-start; cursor: pointer; }
+        .btn { background: #4A90E2; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; }
+        #result { display: none; margin-top: 25px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="text-align:center; color:#2c3e50;">血管健康自測量表</h2>
+        <div id="quiz">正在載入量表題目...</div>
+        <button id="submitBtn" class="btn" style="display:none;" onclick="calculate()">提交並查看分析結果</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec"; // 這裡要替換！
+        let userName = "LINE用戶", userId = "未知ID", questionList = [];
+
+        liff.init({ liffId: "2009061399-LVES2gnp" }).then(() => {
+            if (liff.isLoggedIn()) {
+                liff.getProfile().then(p => {
+                    userName = p.displayName; userId = p.userId;
+                    fetchQuestions();
+                });
+            } else { liff.login(); }
+        });
+
+        function fetchQuestions() {
+            fetch(API_URL).then(res => res.json()).then(data => {
+                questionList = data;
+                const container = document.getElementById('quiz');
+                container.innerHTML = "";
+                data.forEach((q, i) => {
+                    container.innerHTML += `<div class="q-box" onclick="document.getElementById('q${i}').click()"><input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()"><label>${q}</label></div>`;
+                });
+                document.getElementById('submitBtn').style.display = "block";
+            });
+        }
+
+        function calculate() {
+            const checks = document.querySelectorAll('.q');
+            let score = 0, details = [];
+            checks.forEach(c => { score += c.checked ? 1 : 0; details.push(c.checked); });
+
+            let level = score <= 3 ? "第一級" : (score <= 7 ? "第二級" : "第三級");
+            let color = score <= 3 ? "#28a745" : (score <= 7 ? "#f39c12" : "#dc3545");
+
+            document.getElementById('quiz').style.display = "none";
+            document.getElementById('submitBtn').style.display = "none";
+            document.getElementById('result').style.display = "block";
+            document.getElementById('result').innerHTML = `
+                <div style="border:2px solid ${color}; padding:20px; border-radius:15px; text-align:center;">
+                    <h2 style="color:${color}">${level}</h2>
+                    <p>測驗已完成，資料已同步至診所系統。</p>
+                    <button onclick="liff.closeWindow()" style="background:${color}; color:white; padding:12px; width:100%; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">確認並關閉</button>
+                </div>
+            `;
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({userId, userName, score, level, details})
+            });
+        }
+    </script>
+</body>
+</html>
