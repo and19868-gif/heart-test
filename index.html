@@ -8,7 +8,7 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; color: #333; }
         .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .cover-img { width: 100%; border-radius: 15px; margin-bottom: 20px; display: block; }
+        .cover-img { width: 100%; border-radius: 15px; margin-bottom: 20px; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
         .info-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         .start-btn { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
@@ -36,7 +36,7 @@
         </div>
 
         <div id="quiz-area">
-            <div id="quiz">載入中...</div>
+            <div id="quiz">正在同步診所資料...</div>
             <button id="submitBtn" class="btn" onclick="calculate()">提交分析結果</button>
         </div>
 
@@ -44,7 +44,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec"; // ⚡️請替換為您的 Apps Script 部署網址
+        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec"; 
         const urlParams = new URLSearchParams(window.location.search);
         const clinicSource = urlParams.get('clinic') || "官網/未註明";
 
@@ -57,8 +57,8 @@
         });
 
         function startQuiz() {
-            const nameInput = document.getElementById('input-name').value;
-            const yearInput = document.getElementById('input-year').value;
+            const nameInput = document.getElementById('input-name').value.trim();
+            const yearInput = document.getElementById('input-year').value.trim();
 
             if (!nameInput || !yearInput) {
                 alert("請填寫姓名與出生年份");
@@ -86,10 +86,12 @@
                             ${imgTag}
                             <div class="q-text-row">
                                 <input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()">
-                                <label>${q.text}</label>
+                                <label style="cursor:pointer">${q.text}</label>
                             </div>
                         </div>`;
                 });
+            }).catch(err => {
+                document.getElementById('quiz').innerHTML = "資料載入失敗，請檢查 API 設定。";
             });
         }
 
@@ -108,17 +110,17 @@
             if (score <= 1) {
                 level = "第一級：綠色警戒"; color = "#28a745"; 
                 ageDesc = "與生理年齡相符";
-                content = "低風險族群，但現代人生活節奏快，隱形壓力不可掉以輕心。建議維持每年一次定期健康檢查。";
+                content = "低風險族群，但現代人生活節奏快，隱形壓力不可掉以輕心。";
                 suggest = "建議維持每年一次定期健康檢查。";
             } else if (score <= 4) {
                 level = "第二級：黃色警戒"; color = "#f39c12"; 
                 ageDesc = "老化預估 +10 歲";
-                content = "血管發出疲勞警訊！ 長期代謝緩慢正在加速血管硬化。建議進階抽血檢測與內臟脂肪評估。";
+                content = "血管發出疲勞警訊！ 長期代謝緩慢正在加速血管硬化。";
                 suggest = "建議進階抽血檢測與內臟脂肪評估。";
             } else {
                 level = "第三級：紅色警報"; color = "#dc3545"; 
                 ageDesc = "老化預估 +20 歲";
-                content = "危險！血管健康已在臨界點！血管老化可能已超出負荷，發生疾病意外風險顯著增加。立即預約掛號就診，考慮藥物控制。";
+                content = "危險！血管健康已在臨界點！發生疾病意外風險顯著增加。";
                 suggest = "立即預約掛號就診，考慮藥物控制。";
             }
 
@@ -132,7 +134,7 @@
                 <div class="result-card" style="border-color:${color}; background-color:${color}11;">
                     <h2 style="color:${color}; text-align:center;">${level}</h2>
                     <p><strong>受測者：</strong>${realName} (${userAge} 歲)</p>
-                    <p><strong>【${ageDesc}】</strong></p>
+                    <p><strong>評估結果：</strong>【${ageDesc}】</p>
                     <p>${content}</p>
                     <hr style="border:0; border-top:1px solid ${color}44; margin: 15px 0;">
                     <p><strong>💡 建議：</strong>${suggest}</p>
