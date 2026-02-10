@@ -3,99 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>血管年齡自測系統</title>
+    <title>血管健康自測系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; color: #333; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .cover-img { width: 100%; border-radius: 15px; margin-bottom: 20px; display: block; }
-        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-        .info-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .start-btn { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .q-box { padding: 15px; border-bottom: 1px solid #edf2f7; display: flex; flex-direction: column; cursor: pointer; margin-bottom: 15px; background: #fff; border-radius: 12px; }
-        .q-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; }
-        .q-text-row { display: flex; align-items: flex-start; }
-        .q-text-row input { width: 22px; height: 22px; margin-right: 12px; flex-shrink: 0; }
-        .btn { background: #4A90E2; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; }
-        #quiz-area, #result { display: none; }
-        .result-card { padding: 20px; border-radius: 15px; text-align: left; line-height: 1.6; border: 2px solid; }
+        :root { --purple: #8e24aa; --pink: #ec407a; }
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #fce4ec; color: #333; margin: 0; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        .logo { width: 90px; margin-bottom: 10px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { color: var(--purple); margin-bottom: 10px; }
+        .desc-box { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 25px; background: #fef0f5; padding: 15px; border-radius: 12px; text-align: left; }
+        
+        .info-input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
+        .info-input:focus { border-color: var(--pink); outline: none; }
+        
+        .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
+
+        /* 分頁問卷樣式 */
+        .progress-container { height: 8px; background: #eee; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(to right, var(--purple), var(--pink)); width: 0%; transition: 0.4s; }
+        
+        .q-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .q-text { font-size: 19px; font-weight: bold; color: #333; margin-bottom: 30px; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .choice-btn:active { background: var(--purple); color: white; transform: scale(0.95); }
+        .choice-btn.btn-no { border-color: #999; color: #666; }
+        .choice-btn.btn-no:active { background: #999; color: white; }
+
+        #quiz-page, #result-page { display: none; }
+        .result-card { padding: 25px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="https://and19868-gif.github.io/heart-test/cover.jpg" id="mainCover" class="cover-img">
-        <h2 id="mainTitle">血管健康自測量表</h2>
-
-        <div id="user-info">
-            <p style="color: #666; text-align: center;">請填寫基本資料開始評估</p>
-            <label>您的姓名：</label>
-            <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
-            <label>出生年 (民國)：</label>
-            <input type="number" id="input-year" class="info-input" placeholder="例如：75">
-            <button class="start-btn" onclick="startQuiz()">開始測驗</button>
+        <img src="https://lh3.googleusercontent.com/d/1ckJAqfipxFenK9jfxqGIsUc4Dy2ufMVM" class="logo">
+        
+        <div id="start-page">
+            <h2>血管健康自測系統</h2>
+            <div class="desc-box">
+                透過 7 個關鍵指標，了解您的血管老化風險。這份檢測將協助我們提供給您血管照護建議。
+            </div>
+            <input type="text" id="input-name" class="info-input" placeholder="受測者真實姓名">
+            <input type="number" id="input-year" class="info-input" placeholder="出生年份 (民國，如：75)">
+            <button class="start-btn" onclick="startQuiz()">開始檢測</button>
         </div>
 
-        <div id="quiz-area">
-            <div id="quiz">載入中...</div>
-            <button id="submitBtn" class="btn" onclick="calculate()">提交分析結果</button>
+        <div id="quiz-page">
+            <div class="progress-container"><div id="progress" class="progress-fill"></div></div>
+            <img id="q-image" class="q-img" src="">
+            <div id="q-text" class="q-text">讀取中...</div>
+            <div class="btn-group">
+                <button class="choice-btn" onclick="handleAnswer(true)">是 (YES)</button>
+                <button class="choice-btn btn-no" onclick="handleAnswer(false)">否 (NO)</button>
+            </div>
         </div>
 
-        <div id="result"></div>
+        <div id="result-page"></div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
         const urlParams = new URLSearchParams(window.location.search);
         const clinicSource = urlParams.get('clinic') || "官網/未註明";
 
-        let realName = "", userId = "未知ID", userAge = 0, questionList = [];
+        let realName = "", userAge = 0, userId = "未知ID";
+        let questionList = [], currentIndex = 0, userAnswers = [];
 
         liff.init({ liffId: "2009061399-LVES2gnp" }).then(() => {
-            if (liff.isLoggedIn()) {
-                liff.getProfile().then(p => { userId = p.userId; });
-            } else { liff.login(); }
+            if (liff.isLoggedIn()) liff.getProfile().then(p => userId = p.userId);
+            else liff.login();
         });
 
         function startQuiz() {
-            const nameInput = document.getElementById('input-name').value;
-            const yearInput = document.getElementById('input-year').value;
-            if (!nameInput || !yearInput) { alert("請填寫資料"); return; }
-            realName = nameInput;
-            userAge = new Date().getFullYear() - (parseInt(yearInput) + 1911);
-            document.getElementById('user-info').style.display = "none";
-            document.getElementById('quiz-area').style.display = "block";
-            fetchQuestions();
-        }
-
-        function fetchQuestions() {
+            realName = document.getElementById('input-name').value.trim();
+            const year = document.getElementById('input-year').value.trim();
+            if(!realName || !year) return alert("請完整填寫姓名與出生年份");
+            
+            userAge = new Date().getFullYear() - (parseInt(year) + 1911);
+            
             fetch(API_URL).then(res => res.json()).then(data => {
                 questionList = data;
-                const container = document.getElementById('quiz');
-                container.innerHTML = "";
-                data.forEach((q, i) => {
-                    const imgTag = q.img ? `<img src="${q.img}" class="q-img">` : "";
-                    container.innerHTML += `
-                        <div class="q-box" onclick="toggleCheck(${i})">
-                            ${imgTag}
-                            <div class="q-text-row">
-                                <input type="checkbox" class="q" id="q${i}" onclick="event.stopPropagation()">
-                                <label style="cursor:pointer">${q.text}</label>
-                            </div>
-                        </div>`;
-                });
+                document.getElementById('start-page').style.display = "none";
+                document.getElementById('quiz-page').style.display = "block";
+                showQuestion();
             });
         }
 
-        function toggleCheck(i) {
-            const cb = document.getElementById('q'+i);
-            if(cb) cb.checked = !cb.checked;
+        function showQuestion() {
+            const q = questionList[currentIndex];
+            document.getElementById('q-image').src = q.img || "https://and19868-gif.github.io/heart-test/cover.jpg";
+            document.getElementById('q-text').innerText = q.text;
+            // 更新進度條
+            document.getElementById('progress').style.width = ((currentIndex + 1) / questionList.length * 100) + "%";
         }
 
-        function calculate() {
-            const checks = document.querySelectorAll('.q');
-            let score = 0, details = [];
-            checks.forEach(c => { score += c.checked ? 1 : 0; details.push(c.checked); });
+        function handleAnswer(val) {
+            userAnswers.push(val);
+            if (currentIndex < questionList.length - 1) {
+                currentIndex++;
+                showQuestion();
+            } else {
+                submitResult();
+            }
+        }
 
+        function submitResult() {
+            const score = userAnswers.filter(v => v).length;
             let level, color, desc;
 
             if (score <= 1) {
@@ -103,31 +117,28 @@
                 desc = "【與生理年齡相符】低風險族群，但現代人生活節奏快，隱形壓力不可掉以輕心。建議維持每年一次定期健康檢查。";
             } else if (score <= 4) {
                 level = "第二級：黃色警戒"; color = "#f39c12"; 
-                desc = "【老化預估 +10 歲】血管發出疲勞警訊！ 長期代謝緩慢正在加速血管硬化。建議進階抽血檢測與內臟脂肪評估。";
+                desc = "【老化預估 +10 歲】血管發出疲勞警訊！長期代謝緩慢正在加速血管硬化。建議進階抽血檢測與內臟脂肪評估。";
             } else {
                 level = "第三級：紅色警報"; color = "#dc3545"; 
-                desc = "【老化預估 +20 歲】危險！血管健康已在臨界點！血管老化可能已超出負荷，發生疾病意外風險顯著增加。立即預約掛號就診，考慮藥物控制。";
+                desc = "【老化預估 +20 歲】危險！血管健康已在臨界點！血管老化可能已超出負荷，發生疾病意外風險顯著增加。立即預約掛號就診。";
             }
 
-            document.getElementById('mainCover').style.display = "none";
-            document.getElementById('mainTitle').style.display = "none";
-            document.getElementById('quiz-area').style.display = "none";
-            
-            const resDiv = document.getElementById('result');
-            resDiv.style.display = "block";
-            resDiv.innerHTML = `
+            document.getElementById('quiz-page').style.display = "none";
+            const resArea = document.getElementById('result-page');
+            resArea.style.display = "block";
+            resArea.innerHTML = `
                 <div class="result-card" style="border-color:${color}; background-color:${color}11;">
-                    <h2 style="color:${color}; text-align:center;">${level}</h2>
-                    <p><strong>受測者：</strong>${realName} (${userAge} 歲)</p>
+                    <h2 style="color:${color}">${level}</h2>
+                    <p><b>受測者：</b>${realName} (${userAge}歲)</p>
                     <p>${desc}</p>
-                    <button onclick="liff.closeWindow()" style="background:${color}; color:white; padding:15px; width:100%; border:none; border-radius:10px; margin-top:20px; font-weight:bold; cursor:pointer; font-size:16px;">確認並關閉</button>
+                    <button class="start-btn" onclick="liff.closeWindow()">填寫完成，關閉視窗</button>
                 </div>
             `;
 
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
-                body: JSON.stringify({ userId, realName, userAge, score, level, details, clinic: clinicSource })
+                body: JSON.stringify({ userId, realName, userAge, score, level, details: userAnswers, clinic: clinicSource })
             });
         }
     </script>
