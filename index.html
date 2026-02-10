@@ -8,13 +8,8 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #f4f7f9; color: #333; }
         .container { max-width: 500px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        /* 封面圖樣式 */
         .cover-img { width: 100%; border-radius: 15px; margin-bottom: 20px; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
         h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-        
-        /* 題目區塊樣式 */
         .q-box { 
             padding: 15px; border-bottom: 1px solid #edf2f7; 
             display: flex; flex-direction: column; cursor: pointer; 
@@ -26,7 +21,6 @@
         .q-text-row { display: flex; align-items: flex-start; width: 100%; }
         .q-text-row input { width: 22px; height: 22px; margin-right: 12px; margin-top: 2px; flex-shrink: 0; }
         .q-text-row label { font-size: 16px; line-height: 1.5; cursor: pointer; }
-        
         .btn { background: #4A90E2; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; box-shadow: 0 4px 6px rgba(74,144,226,0.3); }
         #result { display: none; margin-top: 10px; }
         .result-card { padding: 20px; border-radius: 15px; text-align: left; line-height: 1.6; border: 2px solid; }
@@ -35,18 +29,19 @@
 <body>
     <div class="container">
         <img src="https://and19868-gif.github.io/heart-test/cover.jpg" id="mainCover" class="cover-img" alt="血管年齡自測封面">
-        
         <h2 id="mainTitle">血管健康自測量表</h2>
-        
         <div id="quiz">正在安全同步診所資料...</div>
-        
         <button id="submitBtn" class="btn" style="display:none;" onclick="calculate()">提交並查看分析結果</button>
-        
         <div id="result"></div>
     </div>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
+        
+        // 解析網址參數獲取診所代碼 (例如 ?clinic=板橋)
+        const urlParams = new URLSearchParams(window.location.search);
+        const clinicSource = urlParams.get('clinic') || "官網/未註明";
+
         let userName = "LINE用戶", userId = "未知ID", questionList = [];
 
         liff.init({ liffId: "2009061399-LVES2gnp" }).then(() => {
@@ -63,9 +58,7 @@
                 questionList = data;
                 const container = document.getElementById('quiz');
                 container.innerHTML = "";
-                
                 data.forEach((q, i) => {
-                    // 如果試算表 B 欄有網址，就顯示圖片
                     const imgTag = q.img ? `<img src="${q.img}" class="q-img">` : "";
                     container.innerHTML += `
                         <div class="q-box" onclick="toggleCheck(${i})">
@@ -93,7 +86,6 @@
             checks.forEach(c => { score += c.checked ? 1 : 0; details.push(c.checked); });
 
             let level, color, age, content, suggest;
-            
             if (score <= 3) {
                 level = "第一級：綠色警戒"; color = "#28a745"; age = "血管年齡：與生理年齡相符";
                 content = "目前您的血管狀況尚屬健康，但現代人生活節奏快，隱形壓力不可掉以輕心。";
@@ -108,7 +100,6 @@
                 suggest = "請立即預約掛號進行深度心血管評估。您可能需要專業影像檢查（如頸動脈超音波）或藥物介入。為了家人與自己，請不要再等待。";
             }
 
-            // 隱藏封面與題目
             document.getElementById('mainCover').style.display = "none";
             document.getElementById('mainTitle').style.display = "none";
             document.getElementById('quiz').style.display = "none";
@@ -127,10 +118,18 @@
                 </div>
             `;
 
+            // 存檔時增加 clinic 欄位
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
-                body: JSON.stringify({userId, userName, score, level, details})
+                body: JSON.stringify({
+                    userId, 
+                    userName, 
+                    score, 
+                    level, 
+                    details, 
+                    clinic: clinicSource // 診所代碼傳回後台
+                })
             });
         }
     </script>
