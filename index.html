@@ -1,76 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>血管健康自測系統</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        :root { --purple: #8e24aa; --pink: #ec407a; }
-        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #fce4ec; color: #333; margin: 0; }
-        .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
-        .logo { width: 90px; margin-bottom: 10px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { color: var(--purple); margin-bottom: 10px; }
-        .desc-box { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 25px; background: #fef0f5; padding: 15px; border-radius: 12px; text-align: left; }
-        
-        .info-input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-        .info-input:focus { border-color: var(--pink); outline: none; }
-        
-        .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
-
-        /* 分頁問卷樣式 */
-        .progress-container { height: 8px; background: #eee; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(to right, var(--purple), var(--pink)); width: 0%; transition: 0.4s; }
-        
-        .q-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
-        .q-text { font-size: 19px; font-weight: bold; color: #333; margin-bottom: 30px; min-height: 60px; display: flex; align-items: center; justify-content: center; }
-        
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .choice-btn:active { background: var(--purple); color: white; transform: scale(0.95); }
-        .choice-btn.btn-no { border-color: #999; color: #666; }
-        .choice-btn.btn-no:active { background: #999; color: white; }
-
-        #quiz-page, #result-page { display: none; }
-        .result-card { padding: 25px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <img src="https://lh3.googleusercontent.com/d/1ckJAqfipxFenK9jfxqGIsUc4Dy2ufMVM" class="logo">
-        
-        <div id="start-page">
-            <h2>血管健康自測系統</h2>
-            <div class="desc-box">
-                透過 7 個關鍵指標，了解您的血管老化風險。這份檢測將協助我們提供給您血管照護建議。
-            </div>
-            <input type="text" id="input-name" class="info-input" placeholder="受測者真實姓名">
-            <input type="number" id="input-year" class="info-input" placeholder="出生年份 (民國，如：75)">
-            <button class="start-btn" onclick="startQuiz()">開始檢測</button>
-        </div>
-
-        <div id="quiz-page">
-            <div class="progress-container"><div id="progress" class="progress-fill"></div></div>
-            <img id="q-image" class="q-img" src="">
-            <div id="q-text" class="q-text">讀取中...</div>
-            <div class="btn-group">
-                <button class="choice-btn" onclick="handleAnswer(true)">是 (YES)</button>
-                <button class="choice-btn btn-no" onclick="handleAnswer(false)">否 (NO)</button>
-            </div>
-        </div>
-
-        <div id="result-page"></div>
-    </div>
-
-    <script>
+<script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
         const urlParams = new URLSearchParams(window.location.search);
         const clinicSource = urlParams.get('clinic') || "官網/未註明";
 
-        let realName = "", userAge = 0, userId = "等待授權...";
+        let realName = "", userAge = 0, userId = "訪客(未授權)"; // 預設為訪客
         let questionList = [], currentIndex = 0, userAnswers = [];
 
-        // 修正後的 LIFF 初始化邏輯
+        // --- 修正後的 LIFF 初始化邏輯 ---
         liff.init({ liffId: "2009061399-LVES2gnp" }).then(() => {
             if (liff.isLoggedIn()) {
                 liff.getProfile()
@@ -78,19 +14,19 @@
                         userId = p.userId; 
                     })
                     .catch(err => {
-                        // 病患雖然登入但點擊取消授權 profile
+                        // 使用者登入 LINE 但拒絕提供個人檔案授權
                         userId = "隱私授權取消";
-                        console.log("病患拒絕個人檔案授權");
+                        console.log("病患拒絕個人檔案授權，以匿名方式繼續");
                     });
             } else {
-                // 如果是在 LINE 內開啟但未登入，嘗試啟動登入
-                // 注意：若病患在授權頁面點取消，會回到此處，因此不強制執行 login 以免無限循環
-                console.log("尚未登入 LINE");
-                userId = "非 LINE 環境/未登入";
+                // 重點修正：如果沒登入，不要執行 liff.login()
+                // 這樣病患在按「取消」授權後，才能停留在原頁面填寫問卷
+                userId = "非LINE環境/拒絕登入";
+                console.log("尚未登入 LINE，進入匿名填寫模式");
             }
         }).catch((err) => {
             console.error("LIFF 初始化失敗", err);
-            userId = "LIFF 初始化失敗";
+            userId = "LIFF初始化失敗";
         });
 
         function startQuiz() {
@@ -100,11 +36,20 @@
             
             userAge = new Date().getFullYear() - (parseInt(year) + 1911);
             
+            // 點擊開始後先將按鈕文字改變，避免重複點擊
+            const startBtn = document.querySelector('.start-btn');
+            startBtn.innerText = "載入中...";
+            startBtn.disabled = true;
+            
             fetch(API_URL).then(res => res.json()).then(data => {
                 questionList = data;
                 document.getElementById('start-page').style.display = "none";
                 document.getElementById('quiz-page').style.display = "block";
                 showQuestion();
+            }).catch(err => {
+                alert("題目載入失敗，請確認網路連線。");
+                startBtn.innerText = "開始檢測";
+                startBtn.disabled = false;
             });
         }
 
@@ -152,6 +97,7 @@
                 </div>
             `;
 
+            // 將結果傳回 Google Sheets
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
@@ -159,5 +105,3 @@
             });
         }
     </script>
-</body>
-</html>
