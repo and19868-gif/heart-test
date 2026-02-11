@@ -67,12 +67,30 @@
         const urlParams = new URLSearchParams(window.location.search);
         const clinicSource = urlParams.get('clinic') || "官網/未註明";
 
-        let realName = "", userAge = 0, userId = "未知ID";
+        let realName = "", userAge = 0, userId = "等待授權...";
         let questionList = [], currentIndex = 0, userAnswers = [];
 
+        // 修正後的 LIFF 初始化邏輯
         liff.init({ liffId: "2009061399-LVES2gnp" }).then(() => {
-            if (liff.isLoggedIn()) liff.getProfile().then(p => userId = p.userId);
-            else liff.login();
+            if (liff.isLoggedIn()) {
+                liff.getProfile()
+                    .then(p => { 
+                        userId = p.userId; 
+                    })
+                    .catch(err => {
+                        // 病患雖然登入但點擊取消授權 profile
+                        userId = "隱私授權取消";
+                        console.log("病患拒絕個人檔案授權");
+                    });
+            } else {
+                // 如果是在 LINE 內開啟但未登入，嘗試啟動登入
+                // 注意：若病患在授權頁面點取消，會回到此處，因此不強制執行 login 以免無限循環
+                console.log("尚未登入 LINE");
+                userId = "非 LINE 環境/未登入";
+            }
+        }).catch((err) => {
+            console.error("LIFF 初始化失敗", err);
+            userId = "LIFF 初始化失敗";
         });
 
         function startQuiz() {
@@ -94,7 +112,6 @@
             const q = questionList[currentIndex];
             document.getElementById('q-image').src = q.img || "https://and19868-gif.github.io/heart-test/cover.jpg";
             document.getElementById('q-text').innerText = q.text;
-            // 更新進度條
             document.getElementById('progress').style.width = ((currentIndex + 1) / questionList.length * 100) + "%";
         }
 
