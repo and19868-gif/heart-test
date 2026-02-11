@@ -17,18 +17,17 @@
         .info-input:focus { border-color: var(--pink); }
         
         .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
-        .start-btn:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
 
-        /* 問卷分頁 */
         .progress-container { height: 8px; background: #eee; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(to right, var(--purple), var(--pink)); width: 0%; transition: 0.4s; }
         .q-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
         .q-text { font-size: 19px; font-weight: bold; color: #333; margin-bottom: 30px; min-height: 60px; display: flex; align-items: center; justify-content: center; }
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; }
-        .choice-btn:active { background: var(--purple); color: white; transform: scale(0.95); }
         
-        #quiz-page, #result-page, #loading-ui { display: none; }
+        /* 初始狀態：確保 start-page 是可見的 */
+        #start-page { display: block; }
+        #quiz-page, #result-page { display: none; }
         .result-card { padding: 25px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; }
     </style>
 </head>
@@ -41,16 +40,15 @@
             <div class="desc-box">
                 透過 7 個關鍵指標，了解您的血管老化風險。這份檢測將協助我們提供給您血管照護建議。
             </div>
-            <div id="init-status" style="font-size: 14px; color: #8e24aa; margin-bottom: 10px;">系統初始化中...</div>
             <input type="text" id="input-name" class="info-input" placeholder="受測者真實姓名">
             <input type="number" id="input-year" class="info-input" placeholder="出生年份 (民國，如：75)">
-            <button class="start-btn" id="mainStartBtn" onclick="startQuiz()" disabled>請稍候...</button>
+            <button class="start-btn" id="mainStartBtn" onclick="startQuiz()">開始檢測</button>
         </div>
 
         <div id="quiz-page">
             <div class="progress-container"><div id="progress" class="progress-fill"></div></div>
             <img id="q-image" class="q-img" src="">
-            <div id="q-text" class="q-text">載入題目中...</div>
+            <div id="q-text" class="q-text">載入中...</div>
             <div class="btn-group">
                 <button class="choice-btn" onclick="handleAnswer(true)">是 (YES)</button>
                 <button class="choice-btn" style="border-color:#999; color:#666;" onclick="handleAnswer(false)">否 (NO)</button>
@@ -65,57 +63,53 @@
         const urlParams = new URLSearchParams(window.location.search);
         const clinicSource = urlParams.get('clinic') || "官網/未註明";
 
-        let realName = "", userAge = 0, userId = "未授權訪客";
+        let realName = "", userAge = 0, userId = "訪客(拒絕或未登入)";
         let questionList = [], currentIndex = 0, userAnswers = [];
 
-        // --- 優化後的 LIFF 初始化 ---
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: "2009061399-LVES2gnp" });
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    userId = profile.userId;
-                } else {
-                    // 如果沒登入，不執行 liff.login()，讓病患直接用訪客身份看頁面
-                    userId = "拒絕登入訪客";
-                }
-            } catch (err) {
-                console.log("LIFF 初始化或授權跳過:", err);
-                userId = "初始化跳過";
-            } finally {
-                // 不管初始化結果如何，都要讓病患可以按開始
-                document.getElementById('init-status').style.display = "none";
-                const btn = document.getElementById('mainStartBtn');
-                btn.disabled = false;
-                btn.innerText = "開始檢測";
-            }
-        }
-
-        // 執行初始化
-        initializeLiff();
+        // 頁面加載後立即啟動 LIFF 初始化，不阻塞 UI
+        window.onload = function() {
+            liff.init({ liffId: "2009061399-LVES2gnp" })
+                .then(() => {
+                    if (liff.isLoggedIn()) {
+                        liff.getProfile().then(p => {
+                            userId = p.userId;
+                        }).catch(e => console.log("Profile error:", e));
+                    }
+                })
+                .catch(err => console.log("LIFF Init error:", err));
+        };
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
             const year = document.getElementById('input-year').value.trim();
-            if(!realName || !year) return alert("請完整填寫姓名與出生年份");
+            
+            if(!realName || !year) {
+                alert("請填寫姓名與出生年份");
+                return;
+            }
             
             userAge = new Date().getFullYear() - (parseInt(year) + 1911);
             
-            // 避免重複點擊
+            // 點擊後立即改變狀態
             const btn = document.getElementById('mainStartBtn');
-            btn.innerText = "題目載入中...";
+            btn.innerText = "正在進入測驗...";
             btn.disabled = true;
 
-            fetch(API_URL).then(res => res.json()).then(data => {
-                questionList = data;
-                document.getElementById('start-page').style.display = "none";
-                document.getElementById('quiz-page').style.display = "block";
-                showQuestion();
-            }).catch(err => {
-                alert("網路不穩定，請重新整理頁面再試一次。");
-                btn.disabled = false;
-                btn.innerText = "開始檢測";
-            });
+            // 抓取題目
+            fetch(API_URL)
+                .then(res => res.json())
+                .then(data => {
+                    questionList = data;
+                    document.getElementById('start-page').style.display = "none";
+                    document.getElementById('quiz-page').style.display = "block";
+                    showQuestion();
+                })
+                .catch(err => {
+                    console.log("Fetch error:", err);
+                    btn.innerText = "重新載入";
+                    btn.disabled = false;
+                    alert("網路載入失敗，請確認連線後再試");
+                });
         }
 
         function showQuestion() {
@@ -144,7 +138,7 @@
                 desc = "【與生理年齡相符】低風險族群，建議維持每年一次定期健康檢查。";
             } else if (score <= 4) {
                 level = "第二級：黃色警戒"; color = "#f39c12"; 
-                desc = "【老化預估 +10 歲】血管發出疲勞警訊！建議進階抽血檢測與內臟脂肪評估。";
+                desc = "【老化預估 +10 歲】血管發出疲勞警訊！建議進階抽血檢測。";
             } else {
                 level = "第三級：紅色警報"; color = "#dc3545"; 
                 desc = "【老化預估 +20 歲】危險！血管健康已在臨界點！立即預約掛號就診。";
@@ -162,7 +156,7 @@
                 </div>
             `;
 
-            // 數據回傳
+            // 數據異步傳回 GAS
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
