@@ -9,15 +9,13 @@
         :root { --purple: #8e24aa; --pink: #ec407a; }
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #fce4ec; color: #333; margin: 0; }
         .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
-        .logo { width: 90px; height: auto; margin-bottom: 10px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .logo { width: 90px; height: auto; margin-bottom: 10px; border-radius: 50%; }
         h2 { color: var(--purple); margin-bottom: 10px; }
         .desc-box { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 25px; background: #fef0f5; padding: 15px; border-radius: 12px; text-align: left; }
-        
         .info-input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; outline: none; }
-        .info-input:focus { border-color: var(--pink); }
-        
         .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
-
+        
+        /* 問卷區樣式 */
         .progress-container { height: 8px; background: #eee; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(to right, var(--purple), var(--pink)); width: 0%; transition: 0.4s; }
         .q-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
@@ -25,10 +23,11 @@
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; }
         
-        /* 初始狀態：確保 start-page 是可見的 */
-        #start-page { display: block; }
         #quiz-page, #result-page { display: none; }
         .result-card { padding: 25px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; }
+        
+        /* 導流按鈕樣式 */
+        .clinic-link-btn { background: #00B900; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-decoration: none; display: block; text-align: center; }
     </style>
 </head>
 <body>
@@ -61,55 +60,41 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
         const urlParams = new URLSearchParams(window.location.search);
-        const clinicSource = urlParams.get('clinic') || "官網/未註明";
+        
+        // 從網址抓取診所來源 (?clinic=上吉診所)
+        const clinicSource = urlParams.get('clinic') || "未註明";
 
-        let realName = "", userAge = 0, userId = "訪客(拒絕或未登入)";
+        // 設定各診所的 LINE 連結 (日後增加只需在此新增)
+        const clinicLinks = {
+            "上吉診所": "https://lin.ee/B2eTuJK",
+            "立吉診所": "https://lin.ee/7tG7Db1",
+            "立丞診所": "https://lin.ee/8buNe2m",
+            "上承診所": "https://lin.ee/GkKrIgY",
+            "立全診所": "https://lin.ee/N16Dqdi",
+            "立竹診所": "https://lin.ee/zbBArbF",
+            "立順診所": "https://lin.ee/m4OVdo7",
+            "上京診所": "https://lin.ee/kI6brXb"
+        };
+
+        let realName = "", userAge = 0, userId = "訪客";
         let questionList = [], currentIndex = 0, userAnswers = [];
 
-        // 頁面加載後立即啟動 LIFF 初始化，不阻塞 UI
-        window.onload = function() {
-            liff.init({ liffId: "2009061399-LVES2gnp" })
-                .then(() => {
-                    if (liff.isLoggedIn()) {
-                        liff.getProfile().then(p => {
-                            userId = p.userId;
-                        }).catch(e => console.log("Profile error:", e));
-                    }
-                })
-                .catch(err => console.log("LIFF Init error:", err));
-        };
+        // 僅初始化 LIFF 但不強制登入，確保不跳出授權視窗
+        liff.init({ liffId: "2009061399-LVES2gnp" });
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
             const year = document.getElementById('input-year').value.trim();
-            
-            if(!realName || !year) {
-                alert("請填寫姓名與出生年份");
-                return;
-            }
-            
+            if(!realName || !year) return alert("請填寫資料");
             userAge = new Date().getFullYear() - (parseInt(year) + 1911);
             
-            // 點擊後立即改變狀態
-            const btn = document.getElementById('mainStartBtn');
-            btn.innerText = "正在進入測驗...";
-            btn.disabled = true;
-
-            // 抓取題目
-            fetch(API_URL)
-                .then(res => res.json())
-                .then(data => {
-                    questionList = data;
-                    document.getElementById('start-page').style.display = "none";
-                    document.getElementById('quiz-page').style.display = "block";
-                    showQuestion();
-                })
-                .catch(err => {
-                    console.log("Fetch error:", err);
-                    btn.innerText = "重新載入";
-                    btn.disabled = false;
-                    alert("網路載入失敗，請確認連線後再試");
-                });
+            document.getElementById('mainStartBtn').innerText = "載入中...";
+            fetch(API_URL).then(res => res.json()).then(data => {
+                questionList = data;
+                document.getElementById('start-page').style.display = "none";
+                document.getElementById('quiz-page').style.display = "block";
+                showQuestion();
+            });
         }
 
         function showQuestion() {
@@ -135,28 +120,34 @@
 
             if (score <= 1) {
                 level = "第一級：綠色警戒"; color = "#28a745"; 
-                desc = "【與生理年齡相符】低風險族群，建議維持每年一次定期健康檢查。";
+                desc = "【與生理年齡相符】低風險族群，建議維持每年定期檢查。";
             } else if (score <= 4) {
                 level = "第二級：黃色警戒"; color = "#f39c12"; 
-                desc = "【老化預估 +10 歲】血管發出疲勞警訊！建議進階抽血檢測。";
+                desc = "【老化預估 +10 歲】血管發出疲勞警訊！建議進階諮詢診所專業醫師。";
             } else {
                 level = "第三級：紅色警報"; color = "#dc3545"; 
-                desc = "【老化預估 +20 歲】危險！血管健康已在臨界點！立即預約掛號就診。";
+                desc = "【老化預估 +20 歲】危險！血管健康已在臨界點！建議立即向醫師諮詢。";
             }
 
             document.getElementById('quiz-page').style.display = "none";
             const resArea = document.getElementById('result-page');
             resArea.style.display = "block";
+
+            // 根據來源診所決定導流按鈕
+            const lineLink = clinicLinks[clinicSource] || "https://line.me/R/ti/p/@your_main_id";
+
             resArea.innerHTML = `
                 <div class="result-card" style="border-color:${color}; background-color:${color}11;">
                     <h2 style="color:${color}">${level}</h2>
                     <p><b>受測者：</b>${realName} (${userAge}歲)</p>
                     <p>${desc}</p>
-                    <button class="start-btn" onclick="liff.closeWindow()">填寫完成，關閉視窗</button>
+                    <hr>
+                    <p style="text-align:center; font-weight:bold;">您是在【${clinicSource}】檢測嗎？</p>
+                    <a href="${lineLink}" class="clinic-link-btn">點此連結診所 LINE 領取建議</a>
+                    <button class="start-btn" style="background:#666;" onclick="liff.closeWindow()">完成並關閉</button>
                 </div>
             `;
 
-            // 數據異步傳回 GAS
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
