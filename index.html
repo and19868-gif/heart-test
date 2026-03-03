@@ -51,8 +51,8 @@
             <label class="label-text">您的姓名</label>
             <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
             
-            <label class="label-text">出生年月日</label>
-            <input type="date" id="input-birthday" class="info-input">
+            <label class="label-text">出生年月日 (民國年月日，如：660606)</label>
+            <input type="tel" id="input-birthday" class="info-input" placeholder="例如：660606" maxlength="7">
             
             <button class="start-btn" id="mainStartBtn" onclick="startQuiz()">開始免費檢測</button>
         </div>
@@ -80,16 +80,31 @@
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
-            userBirthday = document.getElementById('input-birthday').value;
+            const birthInput = document.getElementById('input-birthday').value.trim();
             
-            if(!realName || !userBirthday) return alert("請完整填寫姓名與生日");
-            
-            // 計算年齡
-            const birthDate = new Date(userBirthday);
+            if(!realName || birthInput.length < 6) return alert("請完整填寫姓名與生日格式 (如：660606)");
+
+            // --- 解析民國年月日邏輯 ---
+            // 取得日(最後兩碼)、月(倒數三四碼)、年(剩下的前面號碼)
+            const day = parseInt(birthInput.slice(-2));
+            const month = parseInt(birthInput.slice(-4, -2));
+            const year = parseInt(birthInput.slice(0, birthInput.length - 4)) + 1911;
+
+            const birthDate = new Date(year, month - 1, day);
             const today = new Date();
+
+            // 檢查日期合法性
+            if (isNaN(birthDate.getTime()) || month > 12 || day > 31) {
+                return alert("生日日期格式有誤，請檢查");
+            }
+
+            // 計算精準年齡
             userAge = today.getFullYear() - birthDate.getFullYear();
             const m = today.getMonth() - birthDate.getMonth();
             if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
+
+            userBirthday = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            // -----------------------
 
             // 產生唯一編號
             testID = "V-" + Math.random().toString(36).substr(2, 6).toUpperCase();
