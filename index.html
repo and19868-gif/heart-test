@@ -9,14 +9,15 @@
         * { box-sizing: border-box; }
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #fce4ec; color: #333; margin: 0; }
         .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
-        .logo { width: 90px; height: auto; margin-bottom: 10px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .logo { width: 90px; height: auto; margin-bottom: 10px; border-radius: 50%; }
         h2 { color: var(--purple); margin-bottom: 10px; }
         .desc-box { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 25px; background: #fef0f5; padding: 15px; border-radius: 12px; text-align: left; }
         
-        .info-input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; outline: none; transition: 0.3s; }
+        .label-text { display: block; text-align: left; margin-left: 5px; font-weight: bold; color: var(--purple); font-size: 14px; }
+        .info-input { width: 100%; padding: 14px; margin: 8px 0 20px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; outline: none; transition: 0.3s; }
         .info-input:focus { border-color: var(--pink); }
         
-        .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
+        .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
 
         .progress-container { height: 8px; background: #eee; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(to right, var(--purple), var(--pink)); width: 0%; transition: 0.4s; }
@@ -24,13 +25,19 @@
         .q-text { font-size: 19px; font-weight: bold; color: #333; margin-bottom: 30px; min-height: 60px; display: flex; align-items: center; justify-content: center; }
         
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .choice-btn:active { background: var(--purple); color: white; transform: scale(0.95); }
+        .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; }
 
         #quiz-page, #result-page { display: none; }
-        .result-card { padding: 25px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; }
+        .result-card { padding: 20px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; background: #fff; }
         
-        .clinic-link-btn { background: #00B900; color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; text-decoration: none; display: block; text-align: center; box-shadow: 0 4px 10px rgba(0,185,0,0.2); }
+        /* 診所列表樣式 */
+        .clinic-box { margin-top: 20px; border-top: 2px dashed #eee; padding-top: 20px; }
+        .clinic-item { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; border: 1px solid #eee; }
+        .clinic-name { font-weight: bold; color: var(--purple); font-size: 17px; margin-bottom: 5px; }
+        .clinic-info { font-size: 13px; color: #666; line-height: 1.4; }
+        .add-line-btn { background: #00B900; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: none; display: block; text-align: center; margin-top: 10px; }
+        
+        .test-id { font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 4px; color: #444; }
     </style>
 </head>
 <body>
@@ -39,12 +46,15 @@
         
         <div id="start-page">
             <h2>血管健康自測系統</h2>
-            <div class="desc-box">
-                透過 7 個關鍵指標，了解您的血管老化風險。這份檢測將協助我們提供給您血管照護建議。
-            </div>
-            <input type="text" id="input-name" class="info-input" placeholder="受測者姓名">
-            <input type="number" id="input-year" class="info-input" placeholder="出生年份 (民國，如：75)">
-            <button class="start-btn" id="mainStartBtn" onclick="startQuiz()">開始檢測</button>
+            <div class="desc-box">透過專業指標，了解您的血管老化風險。測驗後將提供照護建議與鄰近診所資訊。</div>
+            
+            <label class="label-text">您的姓名</label>
+            <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
+            
+            <label class="label-text">出生年月日</label>
+            <input type="date" id="input-birthday" class="info-input">
+            
+            <button class="start-btn" id="mainStartBtn" onclick="startQuiz()">開始免費檢測</button>
         </div>
 
         <div id="quiz-page">
@@ -61,46 +71,45 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
-        const urlParams = new URLSearchParams(window.location.search);
-        const clinicSource = urlParams.get('clinic') || "未註明";
-
-        const clinicLinks = {
-            "上吉診所": "https://lin.ee/B2eTuJK",
-            "立吉診所": "https://lin.ee/7tG7Db1",
-            "立丞診所": "https://lin.ee/8buNe2m",
-            "上承診所": "https://lin.ee/GkKrIgY",
-            "立全診所": "https://lin.ee/N16Dqdi",
-            "立竹診所": "https://lin.ee/zbBArbF",
-            "立順診所": "https://lin.ee/m4OVdo7",
-            "上京診所": "https://lin.ee/kI6brXb"
-        };
-
-        let realName = "", userAge = 0, userId = "訪客"; 
+        // 請務必替換成部署後的後端 URL
+        const API_URL = "https://script.google.com/macros/s/你的後端ID/exec";
+        
+        let realName = "", userAge = 0, userBirthday = "", testID = "";
         let questionList = [], currentIndex = 0, userAnswers = [];
-
-        // 已移除所有 LIFF 初始化函數，直接進入純網頁模式
+        let configData = {}; // 存放診所與分析邏輯
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
-            const year = document.getElementById('input-year').value.trim();
-            if(!realName || !year) return alert("請完整填寫姓名與出生年份");
+            userBirthday = document.getElementById('input-birthday').value;
             
-            userAge = new Date().getFullYear() - (parseInt(year) + 1911);
+            if(!realName || !userBirthday) return alert("請完整填寫姓名與生日");
             
+            // 計算年齡
+            const birthDate = new Date(userBirthday);
+            const today = new Date();
+            userAge = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
+
+            // 產生唯一編號
+            testID = "V-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+
             const btn = document.getElementById('mainStartBtn');
-            btn.innerText = "正在載入...";
+            btn.innerText = "正在初始化...";
             btn.disabled = true;
 
+            // 一次抓取所有資料
             fetch(API_URL).then(res => res.json()).then(data => {
-                questionList = data;
+                questionList = data.questions;
+                configData = { clinics: data.clinics, levels: data.levels };
+                
                 document.getElementById('start-page').style.display = "none";
                 document.getElementById('quiz-page').style.display = "block";
                 showQuestion();
             }).catch(err => {
-                alert("網路不穩定，請重新載入");
+                alert("伺服器連線失敗，請稍後再試");
                 btn.disabled = false;
-                btn.innerText = "開始檢測";
+                btn.innerText = "重新載入";
             });
         }
 
@@ -121,43 +130,62 @@
             }
         }
 
+        function recordClick(clinicName) {
+            // 當使用者點擊 LINE 好友連結時，發送一個小訊號到後端
+            fetch(API_URL, {
+                method: "POST",
+                mode: 'no-cors',
+                body: JSON.stringify({ action: "recordClick", testID: testID, clickedClinic: clinicName })
+            });
+        }
+
         function submitResult() {
             const score = userAnswers.filter(v => v).length;
-            let level, color, desc;
-
-            if (score <= 1) {
-                level = "第一級：綠色警戒"; color = "#28a745"; 
-                desc = "【血管年齡與生理年齡相符】低風險族群，但現代人生活節奏快，隱形壓力不可掉以輕心。建議維持每年一次定期健康檢查。";
-            } else if (score <= 4) {
-                level = "第二級：黃色警戒"; color = "#f39c12"; 
-                desc = "【血管老化預估 +10 歲】血管發出疲勞警訊！ 長期代謝緩慢正在加速血管硬化。建議進階抽血檢測與內臟脂肪評估。";
-            } else {
-                level = "第三級：紅色警報"; color = "#dc3545"; 
-                desc = "【血管老化預估 +20 歲】危險！血管健康已在臨界點！血管老化可能已超出負荷，發生疾病意外風險顯著增加。立即預約掛號就診，考慮藥物控制。";
-            }
+            
+            // 從 configData.levels 找尋對應得分的定義
+            let currentLevel = configData.levels.find(l => score >= l.min && score <= l.max) || configData.levels[0];
 
             document.getElementById('quiz-page').style.display = "none";
             const resArea = document.getElementById('result-page');
             resArea.style.display = "block";
 
-            const lineLink = clinicLinks[clinicSource] || "https://line.me/";
+            // 建立診所列表 HTML
+            let clinicsHtml = configData.clinics.map(c => `
+                <div class="clinic-item">
+                    <div class="clinic-name">${c.name}</div>
+                    <div class="clinic-info">📍 ${c.address}<br>📞 ${c.phone}</div>
+                    <a href="${c.line}" target="_blank" class="add-line-btn" onclick="recordClick('${c.name}')">加入 LINE 諮詢</a>
+                </div>
+            `).join('');
 
             resArea.innerHTML = `
-                <div class="result-card" style="border-color:${color}; background-color:${color}11;">
-                    <h2 style="color:${color}">${level}</h2>
-                    <p><b>受測者姓名：</b>${realName} (${userAge}歲)</p>
-                    <p>${desc}</p>
-                    <hr style="border:0; border-top:1px solid #ddd; margin:15px 0;">
-                    <p style="text-align:center; font-weight:bold; color:#555;">您目前的受測地點：${clinicSource}</p>
-                    <a href="${lineLink}" target="_blank" class="clinic-link-btn">想了解更多，點此加入診所 LINE </a>
-                    <p style="text-align:center; font-size:12px; color:#999; margin-top:10px;">測驗已完成，您可以直接關閉此視窗</p>
+                <div class="result-card" style="border-color:${currentLevel.color};">
+                    <h2 style="color:${currentLevel.color}">${currentLevel.title}</h2>
+                    <p>受測者：<b>${realName}</b> (${userAge}歲)</p>
+                    <p>測驗編號：<span class="test-id">${testID}</span></p>
+                    <p style="background:${currentLevel.color}11; padding:10px; border-radius:10px;">${currentLevel.desc}</p>
+                    
+                    <div class="clinic-box">
+                        <p style="font-weight:bold; color:#555;">📍 推薦就診診所 (請選擇離您最近的)：</p>
+                        ${clinicsHtml}
+                    </div>
                 </div>
             `;
 
+            // 將完整資料送回 Google Sheet
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
-                body: JSON.stringify({ userId, realName, userAge, score, level, details: userAnswers, clinic: clinicSource })
+                body: JSON.stringify({ 
+                    action: "saveResult",
+                    testID: testID, 
+                    realName: realName, 
+                    birthday: userBirthday,
+                    userAge: userAge, 
+                    score: score, 
+                    level: currentLevel.title, 
+                    details: userAnswers 
+                })
             });
         }
     </script>
