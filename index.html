@@ -82,28 +82,37 @@
             realName = document.getElementById('input-name').value.trim();
             const birthInput = document.getElementById('input-birthday').value.trim();
             
+            // 防呆：姓名不能為空，生日長度需在 6~7 位之間
             if(!realName || birthInput.length < 6) return alert("請完整填寫姓名與生日格式 (如：660606)");
 
             // --- 解析民國年月日邏輯 ---
-            // 取得日(最後兩碼)、月(倒數三四碼)、年(剩下的前面號碼)
-            const day = parseInt(birthInput.slice(-2));
-            const month = parseInt(birthInput.slice(-4, -2));
-            const year = parseInt(birthInput.slice(0, birthInput.length - 4)) + 1911;
+            try {
+                // 取得日(最後兩碼)、月(倒數三四碼)
+                const day = parseInt(birthInput.slice(-2));
+                const month = parseInt(birthInput.slice(-4, -2));
+                // 年份：扣除月日後剩下的前面號碼即為民國年
+                const rocYear = parseInt(birthInput.slice(0, birthInput.length - 4));
+                const year = rocYear + 1911;
 
-            const birthDate = new Date(year, month - 1, day);
-            const today = new Date();
+                const birthDate = new Date(year, month - 1, day);
+                const today = new Date();
 
-            // 檢查日期合法性
-            if (isNaN(birthDate.getTime()) || month > 12 || day > 31) {
-                return alert("生日日期格式有誤，請檢查");
+                // 檢查日期合法性 (例如月分不能大於12)
+                if (isNaN(birthDate.getTime()) || month > 12 || month < 1 || day > 31 || day < 1) {
+                    return alert("生日日期格式有誤，請檢查");
+                }
+
+                // 計算精準年齡
+                userAge = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
+
+                // 【關鍵】直接存入原始輸入字串，方便後台手動搜尋
+                userBirthday = birthInput; 
+
+            } catch (e) {
+                return alert("生日格式解析失敗，請輸入正確的數字格式");
             }
-
-            // 計算精準年齡
-            userAge = today.getFullYear() - birthDate.getFullYear();
-            const m = today.getMonth() - birthDate.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
-
-            userBirthday = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
             // -----------------------
 
             // 產生唯一編號
